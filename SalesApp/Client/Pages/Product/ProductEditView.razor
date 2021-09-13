@@ -1,0 +1,62 @@
+﻿@inject HttpClient client
+@inject IJSRuntime js
+
+@if (Product != null)
+{
+    <div>
+        <h3 class="h3">@Title</h3>
+        <EditForm Model="Product" OnValidSubmit="OnValidSubmit">
+            <div class="form-group">
+                <input type="hidden" @bind-value="Product.Id" />
+                <label class="form-text">Name:</label>
+                <InputText class="form-control" @bind-Value="Product.Name"></InputText>
+            </div>
+            <div class="form-group">
+                <label class="form-text">Key:</label>
+                <InputText class="form-control" @bind-Value="Product.Key"></InputText>
+            </div>
+            <div class="form-group">
+                <label class="form-text">Price:</label>
+                <InputNumber class="form-control" @bind-Value="Product.Price"></InputNumber>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+    [Parameter]
+    public Product Product { get; set; }
+    [Parameter]
+    public ProductView Parent { get; set; }
+
+    private async Task OnValidSubmit()
+    {
+        if(Product.Id == null)
+        {
+            await client.PostAsJsonAsync<Product>("/product", Product);
+        }
+        else
+        {
+            await client.PutAsJsonAsync<Product>("/product", Product);
+        }
+        await Parent.RefreshGrid();
+        Close();
+    }
+
+    private void Close()
+    {
+        this.Product = null;
+    }
+
+    private void Cancel()
+    {
+        this.Close();
+    }
+
+}

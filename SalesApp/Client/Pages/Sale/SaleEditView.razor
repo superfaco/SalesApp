@@ -1,0 +1,121 @@
+﻿@inject IJSRuntime js
+@inject HttpClient client
+
+@if (Sale != null)
+{
+    <div>
+        <EditForm Model="Sale" OnValidSubmit="OnValidSubmit">
+            <div class="form-group">
+                <input type="hidden" @bind-value="Sale.Id" />
+                <label class="form-text">Customer:</label>
+                <InputText class="form-control" @bind-Value="Sale.Customer"></InputText>
+            </div>
+            <div class="form-group">
+                <label class="form-text">Sale Date:</label>
+                <InputDate class="form-control" @bind-Value="Sale.SaleDate"></InputDate>
+            </div>
+            <div class="form-group">
+                <label class="form-text">Employee:</label>
+                <InputText class="form-control" @bind-Value="Sale.Employee"></InputText>
+            </div>
+            <div class="form-group">
+                <table class="table table-secondary table-active table-borderless">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Sale Price</th>
+                            <th>
+                                <button type="button" class="btn btn-info" @onclick="AddSaleDetail">Add Sale Detail</button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (SaleDetail sd in Sale.SaleDetails)
+                        {
+                            <tr>
+                                <td>
+                                    <InputSelect class="form-control" @bind-Value="sd.ProductIdAux">
+                                        <option>Select...</option>
+                                        @if (Products != null)
+                                                {
+                                                    foreach (Product prod in Products)
+                                                    {
+                                                <option value="@prod.Id">@prod.Name</option>
+                                                    }
+                                                }
+                                    </InputSelect>
+                                </td>
+                                <td>
+                                    <InputNumber class="form-control" @bind-Value="sd.Quantity"></InputNumber>
+                                </td>
+                                <td>
+                                    <InputNumber class="form-control" @bind-Value="sd.SalePrice"></InputNumber>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-warning" @onclick="() => RemoveSaleDetail(sd)">Remove</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Sale Sale { get; set; }
+    [Parameter]
+    public string Title { get; set; }
+    [Parameter]
+    public SaleView Parent { get; set; }
+
+    private List<Product> Products { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Products = await client.GetFromJsonAsync<List<Product>>("/product");
+    }
+
+    private async Task OnValidSubmit()
+    {
+        if (Sale.Id == null)
+        {
+            await client.PostAsJsonAsync<Sale>("/sale", Sale);
+        }
+        else
+        {
+            await client.PutAsJsonAsync<Sale>("/sale", Sale);
+        }
+        await this.Parent.RefreshGrid();
+        this.Close();
+    }
+
+    private void Close()
+    {
+        this.Sale = null;
+    }
+
+    private void Cancel()
+    {
+        this.Close();
+    }
+
+    private void AddSaleDetail()
+    {
+        this.Sale.SaleDetails.Add(new SaleDetail());
+    }
+
+    private void RemoveSaleDetail(SaleDetail saleDetail)
+    {
+        this.Sale.SaleDetails.Remove(saleDetail);
+    }
+
+
+}

@@ -1,0 +1,89 @@
+﻿@page "/ProductView"
+@inject IJSRuntime js
+@inject HttpClient client
+
+<h3 class="h3">Products</h3>
+
+@if (Products == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <div>
+        <div style="height: 60%;">
+            <button type="button" class="btn btn-primary" @onclick="New">New Product</button>
+            <table class="table table-primary table-striped table-borderd table-active">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Key</th>
+                        <th>Price</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(Product prod in Products)
+                {
+                    <tr>
+                        <td>@prod.Id</td>
+                        <td>@prod.Name</td>
+                        <td>@prod.Key</td>
+                        <td>@prod.Price</td>
+                        <td>
+                            <button type="button" class="btn btn-warning" @onclick="() => Edit(prod)">Edit</button>
+                            <button type="button" class="btn btn-danger" @onclick="() => Delete(prod)">Delete</button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <div style="height: 40%;">
+            <ProductEditView Parent="this" Title="@Title" Product="Product"></ProductEditView>
+        </div>
+    </div>
+}
+
+@code {
+    private Product Product { get; set; }
+    private List<Product> Products { get; set; }
+    private string Title { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshGrid();
+    }
+
+    public async Task RefreshGrid()
+    {
+        Products = await client.GetFromJsonAsync<List<Product>>("/product");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void New()
+    {
+        this.Product = new Product();
+        this.Title = "New Product";
+    }
+
+    private void Edit(Product product)
+    {
+        this.Product = product;
+        this.Title = "Edit Title";
+    }
+
+    private async Task Delete(Product product)
+    {
+        this.Product = null;
+        if (await js.InvokeAsync<bool>("confirm", "Are you sure you want to delete the item?"))
+        {
+            await client.DeleteAsync($"/product/{product.Id}");
+            await RefreshGrid();
+        }
+    }
+
+
+
+}
